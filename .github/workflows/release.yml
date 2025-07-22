@@ -2,7 +2,7 @@ name: Release
     
 on:    
   push:    
-    branches: [master]  
+    branches: [master, ci-test]  
   pull_request:    
     branches: [master]
   workflow_dispatch:    
