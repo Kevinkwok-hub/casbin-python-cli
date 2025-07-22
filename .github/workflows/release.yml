@@ -4,8 +4,8 @@ on:
   push:    
     branches: [master, ci-test]  
   pull_request:    
-    branches: [master]
-  workflow_dispatch:    
+    branches: [master]    
+  workflow_dispatch:  
     
 jobs:    
   test:    
@@ -68,7 +68,7 @@ jobs:
   release:    
     needs: [test, build-binaries]    
     runs-on: ubuntu-latest    
-    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request' || github.ref == 'refs/heads/CI-test' 
+    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'  
         
     steps:    
     - uses: actions/checkout@v4    
@@ -101,7 +101,6 @@ jobs:
         
     - name: Semantic Release    
       env:    
-        #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-        GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}  
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         #PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}    
       run: npx semantic-release

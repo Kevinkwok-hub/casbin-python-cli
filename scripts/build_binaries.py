@@ -1,22 +1,36 @@
+# Copyright 2025 The casbin Authors. All Rights Reserved.  
+#  
+# Licensed under the Apache License, Version 2.0 (the "License");  
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at  
+#  
+#      http://www.apache.org/licenses/LICENSE-2.0  
+#  
+# Unless required by applicable law or agreed to in writing, software  
+# distributed under the License is distributed on an "AS IS" BASIS,  
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and  
+# limitations under the License.  
+  
 import os    
 import sys    
 import subprocess    
-import platform    
+import platform  
 import argparse  
     
 def build_binary():    
     """Build standalone binary using PyInstaller"""  
       
-    # Parse command line arguments (保持兼容性)  
+    # Parse command line arguments  
     parser = argparse.ArgumentParser()  
     parser.add_argument('--platform', help='Target platform (linux, darwin, windows)')  
     args = parser.parse_args()  
-        
+      
     # Install PyInstaller if not present    
     subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)    
-        
-    # Get platform info    
-    system = platform.system().lower()    
+      
+    # Get platform and architecture info  
+    system = platform.system().lower()  
     arch = platform.machine().lower()  
       
     # 标准化架构名称  
@@ -33,17 +47,22 @@ def build_binary():
       
     # 如果提供了platform参数，使用它；否则使用自动检测  
     if args.platform:  
-        if args.platform == 'darwin':  
-            system = 'darwin'  
-        elif args.platform == 'linux':  
-            system = 'linux'  
-        elif args.platform == 'windows':  
-            system = 'windows'  
-        
-    # Build binary name - 确保格式正确  
-    binary_name = f"casbin-python-cli-{system}-{normalized_arch}"  
+        target_platform = args.platform  
+    else:  
+        # Fallback to auto-detection  
+        if system == 'darwin':  
+            target_platform = 'darwin'  
+        elif system == 'linux':  
+            target_platform = 'linux'  
+        elif system == 'windows':  
+            target_platform = 'windows'  
+        else:  
+            target_platform = system  
+      
+    # Build binary name - 使用真实的架构信息  
+    binary_name = f"casbin-python-cli-{target_platform}-{normalized_arch}"  
     executable_name = binary_name  
-    if system == "windows":    
+    if target_platform == "windows":    
         executable_name += ".exe"  
         
     cmd = [    
