@@ -1,9 +1,4 @@
 name: Release    
-  
-permissions:  
-  contents: write  
-  issues: write  
-  pull-requests: write  
     
 on:    
   push:    
@@ -73,27 +68,13 @@ jobs:
   release:    
     needs: [test, build-binaries]    
     runs-on: ubuntu-latest    
-    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request' || github.ref == 'refs/heads/CI-test' 
+    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request' || github.ref == 'refs/heads/CI-test'  
         
     steps:    
     - uses: actions/checkout@v4    
       with:    
         fetch-depth: 0    
         token: ${{ secrets.GITHUB_TOKEN }}    
-        
-    - name: Configure Git  
-      run: |  
-        git config --global user.name "github-actions[bot]"  
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"  
-          
-    - name: Clean up existing tags (if needed)  
-      run: |  
-        # 检查并删除可能冲突的标签  
-        if git tag -l | grep -q "^v1.0.0$"; then  
-          echo "Removing existing v1.0.0 tag"  
-          git tag -d v1.0.0 || true  
-          git push origin :refs/tags/v1.0.0 || true  
-        fi  
         
     - name: Set up Python    
       uses: actions/setup-python@v4    
