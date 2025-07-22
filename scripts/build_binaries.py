@@ -1,42 +1,28 @@
-# Copyright 2025 The casbin Authors. All Rights Reserved.  
-#  
-# Licensed under the Apache License, Version 2.0 (the "License");  
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at  
-#  
-#      http://www.apache.org/licenses/LICENSE-2.0  
-#  
-# Unless required by applicable law or agreed to in writing, software  
-# distributed under the License is distributed on an "AS IS" BASIS,  
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and  
-# limitations under the License.  
-  
 import os    
 import sys    
 import subprocess    
-import platform  
+import platform    
 import argparse  
     
 def build_binary():    
     """Build standalone binary using PyInstaller"""  
       
-    # Parse command line arguments  
+    # Parse command line arguments (保持兼容性)  
     parser = argparse.ArgumentParser()  
     parser.add_argument('--platform', help='Target platform (linux, darwin, windows)')  
     args = parser.parse_args()  
-      
+        
     # Install PyInstaller if not present    
     subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)    
-      
-    # Get platform and architecture info  
-    system = platform.system().lower()  
+        
+    # Get platform info    
+    system = platform.system().lower()    
     arch = platform.machine().lower()  
       
-    # Map architecture names to consistent format  
+    # 标准化架构名称  
     arch_mapping = {  
-        'x86_64': 'amd64',  
-        'amd64': 'amd64',  
+        'x86_64': 'x86_64',  
+        'amd64': 'x86_64',   
         'arm64': 'arm64',  
         'aarch64': 'arm64',  
         'i386': '386',  
@@ -45,29 +31,25 @@ def build_binary():
       
     normalized_arch = arch_mapping.get(arch, arch)  
       
-    # Determine target platform  
+    # 如果提供了platform参数，使用它；否则使用自动检测  
     if args.platform:  
-        target_platform = args.platform  
-    else:  
-        # Fallback to auto-detection  
-        if system == 'darwin':  
-            target_platform = 'darwin'  
-        elif system == 'linux':  
-            target_platform = 'linux'  
-        elif system == 'windows':  
-            target_platform = 'windows'  
-        else:  
-            target_platform = system  
-      
-    # Build binary name with platform and architecture  
-    binary_name = f"casbin-python-cli-{target_platform}-{normalized_arch}"  
-    if target_platform == "windows":  
-        binary_name += ".exe"  
+        if args.platform == 'darwin':  
+            system = 'darwin'  
+        elif args.platform == 'linux':  
+            system = 'linux'  
+        elif args.platform == 'windows':  
+            system = 'windows'  
+        
+    # Build binary name - 确保格式正确  
+    binary_name = f"casbin-python-cli-{system}-{normalized_arch}"  
+    executable_name = binary_name  
+    if system == "windows":    
+        executable_name += ".exe"  
         
     cmd = [    
         "pyinstaller",    
         "--onefile",    
-        "--name", binary_name.replace('.exe', ''),
+        "--name", binary_name,  # 不包含.exe，PyInstaller会自动添加  
         "--console",    
         "--paths", ".",    
         "--hidden-import", "casbin_cli",    
@@ -83,7 +65,7 @@ def build_binary():
         
     subprocess.run(cmd, check=True)    
         
-    print(f"Binary built successfully: dist/{binary_name}")    
+    print(f"Binary built successfully: dist/{executable_name}")    
     
 if __name__ == "__main__":    
     build_binary()
