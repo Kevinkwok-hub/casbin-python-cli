@@ -1,3 +1,4 @@
 casbin>=1.17.0  
 pytest>=7.0.0  
 pytest-cov>=4.0.0  
+flask>=2.3.0

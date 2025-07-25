@@ -13,7 +13,7 @@ class CommandExecutor:
     def execute(self):  
         """Execute the command and return the result in JSON format"""  
         try:  
-            # Method name mapping: Java style -> Python style 
+            # Method name mapping: Java style -> Python style  
             method_mapping = {  
                 'enforceEx': 'enforce_ex',  
                 'enforceExWithMatcher': 'enforce_ex_with_matcher',  
@@ -72,15 +72,13 @@ class CommandExecutor:
                 'hasPermissionForUser': 'has_permission_for_user',  
                 'getImplicitRolesForUser': 'get_implicit_roles_for_user',  
                 'getImplicitPermissionsForUser': 'get_implicit_permissions_for_user',  
-                'getImplicitUsersForRole': 'get_implicit_users_for_role',
+                'getImplicitUsersForRole': 'get_implicit_users_for_role',  
                 'addPolicies': 'add_policies',  
             }  
-              
-              
+  
             actual_method_name = method_mapping.get(self.command_name, self.command_name)  
-              
-
-            if not hasattr(self.enforcer, actual_method_name):      
+  
+            if not hasattr(self.enforcer, actual_method_name):  
                 available_methods = [method for method in dir(self.enforcer) if not method.startswith('_')]  
                 raise AttributeError(f"Method '{actual_method_name}' not found. Available methods: {available_methods[:10]}...")  
   
@@ -95,12 +93,12 @@ class CommandExecutor:
             # Build response with standardized format  
             response = ResponseBody()  
   
-            # Process result based on return type 
+            # Process result based on return type  
             if isinstance(result, bool):  
                 response.allow = result  
-                response.explain = None
+                response.explain = None  
             elif isinstance(result, tuple) and len(result) == 2:  
-            # Handle enforce_ex return format: (boolean, list)  
+                # Handle enforce_ex return format: (boolean, list)  
                 response.allow = result[0]  
                 response.explain = result[1]  
             elif isinstance(result, list):  
@@ -113,9 +111,6 @@ class CommandExecutor:
             else:  
                 response.allow = None  
                 response.explain = result  
-
-
-            
   
             # Save policy for modification operations  
             modification_operations = [  
@@ -129,14 +124,14 @@ class CommandExecutor:
                 'deleteUser', 'deleteRole', 'deletePermission', 'addPermissionForUser',  
                 'deletePermissionForUser', 'deletePermissionsForUser'  
             ]  
-              
+  
             if self.command_name in modification_operations:  
                 self.enforcer.save_policy()  
   
             # Return JSON response with consistent formatting  
             return json.dumps(response.to_dict(), separators=(',', ':'), ensure_ascii=False)  
   
-        except Exception as e:      
+        except Exception as e:  
             import sys  
             if hasattr(sys, '_called_from_test') or 'pytest' in sys.modules:  
                 raise Exception(f"Error executing command '{self.command_name}': {str(e)}")  
@@ -146,45 +141,18 @@ class CommandExecutor:
     def _convert_arguments(self, method, args: List[str]) -> List[Any]:  
         """Convert string arguments to appropriate types based on method signature"""  
         if not args:  
-            return []
-
-      
+            return []  
   
         converted = []  
-          
-        # Handle special cases for specific method signatures 
-        if self.command_name == 'batchEnforce':
-            #print(f"DEBUG: Input args: {args}")  
-            #print(f"DEBUG: Args length: {len(args)}")     
-            batch_requests = []  
-            for arg in args:
-                #print(f"DEBUG: Processing arg {i}: '{arg}'")
-                split_result = arg.split(',')  
-                #print(f"DEBUG: Split result: {split_result}")   
-                batch_requests.append(arg.split(','))
-            #print(f"DEBUG: Final batch_requests: {batch_requests}")  
-            return batch_requests 
-        '''
+  
+        # Handle special cases for specific method signatures  
         if self.command_name == 'batchEnforce':  
-            # Convert comma-separated strings to lists for batch operations
-            print(f"DEBUG: Original args: {self.args}")   
             batch_requests = []  
             for arg in args:  
-                if ',' in arg:  
-                    batch_requests.append(arg.split(','))
-                print(f"DEBUG: Converted requests: {batch_requests}") 
-
-                try: 
-                    result = self.enforcer.batch_enforce(batch_requests)  
-                    print(f"DEBUG: Batch enforce result: {result}")  
-                    return batch_requests   
-                except Exception as e:  
-                    print(f"DEBUG: Error in batch_enforce: {e}")  
-                    raise 
-                #else:  
-                #    batch_requests.append([arg])  
-            #return batch_requests 
-        '''
+                split_result = arg.split(',')  
+                batch_requests.append(split_result)  
+            return batch_requests  
+  
         # Handle methods with matcher parameter  
         if self.command_name in ['enforceWithMatcher', 'enforceExWithMatcher']:  
             # First argument is matcher string, rest are regular parameters  
@@ -192,12 +160,15 @@ class CommandExecutor:
             converted.extend(args[1:])  # other parameters  
             return converted  
   
-        # Handle JSON object parameters  
+        # Enhanced JSON object parameters handling for ABAC models  
         for i, arg in enumerate(args):  
-            if arg and arg.strip().startswith('{'):  
+            if arg and arg.strip().startswith('{') and arg.strip().endswith('}'):  
                 try:  
-                    converted.append(json.loads(arg))  
+                    # Parse JSON objects for ABAC models  
+                    json_obj = json.loads(arg)  
+                    converted.append(json_obj)  
                 except json.JSONDecodeError:  
+                    # If JSON parsing fails, treat as string  
                     converted.append(arg)  
             elif arg and ',' in arg and self._should_split_as_list(self.command_name, i):  
                 # Split comma-separated values for list parameters  
@@ -222,23 +193,23 @@ class CommandExecutor:
             'addNamedGroupingPolicies': [1],  
             'removeNamedGroupingPolicies': [1]  
         }  
-          
+  
         return method_name in list_methods and arg_index in list_methods[method_name]  
   
     def _convert_single_argument(self, arg: str) -> Any:  
         """Convert a single string argument to appropriate type"""  
         if arg is None:  
             return None  
-              
+  
         # Try to convert to integer  
         try:  
             return int(arg)  
         except ValueError:  
             pass  
-              
+  
         # Try to convert to boolean  
         if arg.lower() in ['true', 'false']:  
             return arg.lower() == 'true'  
-              
+  
         # Return as string  
         return arg
